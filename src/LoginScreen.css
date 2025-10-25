@@ -1,0 +1,439 @@
+.login-screen {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+  animation: fadeIn 0.5s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ==========================================
+   FONDO ANIMADO
+   ========================================== */
+.login-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  opacity: 0.1;
+}
+
+.chess-piece {
+  position: absolute;
+  font-size: 80px;
+  color: white;
+  animation: float 20s infinite ease-in-out;
+}
+
+.piece-1 {
+  top: 10%;
+  left: 10%;
+  animation-delay: 0s;
+}
+
+.piece-2 {
+  top: 20%;
+  right: 15%;
+  animation-delay: 2s;
+}
+
+.piece-3 {
+  bottom: 15%;
+  left: 15%;
+  animation-delay: 4s;
+}
+
+.piece-4 {
+  bottom: 30%;
+  right: 10%;
+  animation-delay: 1s;
+}
+
+.piece-5 {
+  top: 50%;
+  left: 5%;
+  animation-delay: 3s;
+}
+
+.piece-6 {
+  top: 40%;
+  right: 5%;
+  animation-delay: 5s;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  25% {
+    transform: translateY(-30px) rotate(5deg);
+  }
+  50% {
+    transform: translateY(0) rotate(0deg);
+  }
+  75% {
+    transform: translateY(30px) rotate(-5deg);
+  }
+}
+
+/* ==========================================
+   CONTAINER PRINCIPAL
+   ========================================== */
+.login-container {
+  max-width: 500px;
+  width: 100%;
+  z-index: 10;
+  animation: slideUp 0.6s ease;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ==========================================
+   LOGO
+   ========================================== */
+.login-logo {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.logo-icon {
+  font-size: 80px;
+  animation: bounce 2s infinite;
+  display: inline-block;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-20px); }
+}
+
+.login-logo h1 {
+  font-size: 3rem;
+  color: white;
+  margin: 10px 0;
+  text-shadow: 2px 2px 10px rgba(0,0,0,0.3);
+  font-weight: 800;
+}
+
+.tagline {
+  color: rgba(255,255,255,0.9);
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+/* ==========================================
+   CARD DE LOGIN
+   ========================================== */
+.login-card {
+  background: white;
+  border-radius: 20px;
+  padding: 40px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  margin-bottom: 30px;
+}
+
+.login-card h2 {
+  margin: 0 0 10px;
+  color: #333;
+  font-size: 1.8rem;
+  text-align: center;
+}
+
+.login-subtitle {
+  color: #666;
+  text-align: center;
+  margin: 0 0 30px;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+/* ==========================================
+   BOTÓN DE GOOGLE
+   ========================================== */
+.google-login-btn {
+  width: 100%;
+  padding: 15px;
+  background: white;
+  color: #333;
+  border: 2px solid #e0e0e0;
+  border-radius: 12px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.google-login-btn:hover:not(:disabled) {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+  border-color: #667eea;
+}
+
+.google-login-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.google-login-btn img {
+  width: 24px;
+  height: 24px;
+}
+
+.btn-spinner {
+  width: 20px;
+  height: 20px;
+  border: 3px solid #f3f3f3;
+  border-top-color: #667eea;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ==========================================
+   DIVIDER
+   ========================================== */
+.divider {
+  display: flex;
+  align-items: center;
+  margin: 25px 0;
+  color: #999;
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #e0e0e0;
+}
+
+.divider span {
+  padding: 0 15px;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+/* ==========================================
+   BOTÓN DE INVITADO
+   ========================================== */
+.guest-btn {
+  width: 100%;
+  padding: 15px;
+  background: #f8f9fa;
+  color: #666;
+  border: 2px solid #e0e0e0;
+  border-radius: 12px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.guest-btn:hover:not(:disabled) {
+  background: #e9ecef;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.guest-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ==========================================
+   BENEFICIOS
+   ========================================== */
+.login-benefits {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 15px;
+  margin: 30px 0 20px;
+}
+
+.benefit-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  color: #555;
+  transition: all 0.3s;
+}
+
+.benefit-item:hover {
+  background: #e9ecef;
+  transform: translateY(-2px);
+}
+
+.benefit-icon {
+  font-size: 1.5rem;
+}
+
+/* ==========================================
+   PRIVACIDAD
+   ========================================== */
+.login-privacy {
+  text-align: center;
+  font-size: 0.8rem;
+  color: #999;
+  margin: 20px 0 0;
+  line-height: 1.5;
+}
+
+/* ==========================================
+   ESTADÍSTICAS
+   ========================================== */
+.login-stats {
+  display: flex;
+  justify-content: space-around;
+  gap: 20px;
+}
+
+.stat-box {
+  background: rgba(255,255,255,0.2);
+  backdrop-filter: blur(10px);
+  padding: 20px;
+  border-radius: 15px;
+  text-align: center;
+  flex: 1;
+  transition: all 0.3s;
+  border: 2px solid rgba(255,255,255,0.3);
+}
+
+.stat-box:hover {
+  background: rgba(255,255,255,0.3);
+  transform: translateY(-5px);
+}
+
+.stat-number {
+  display: block;
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: white;
+  margin-bottom: 5px;
+}
+
+.stat-label {
+  display: block;
+  font-size: 0.9rem;
+  color: rgba(255,255,255,0.9);
+}
+
+/* ==========================================
+   ANIMACIÓN DE BIENVENIDA
+   ========================================== */
+.welcome-animation {
+  text-align: center;
+}
+
+.success-icon {
+  font-size: 80px;
+  animation: scaleIn 0.5s ease;
+  margin-bottom: 20px;
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+.welcome-animation h2 {
+  color: #333;
+  font-size: 2rem;
+  margin-bottom: 10px;
+}
+
+.welcome-animation p {
+  color: #666;
+  margin-bottom: 20px;
+}
+
+.loading-bar {
+  width: 100%;
+  height: 6px;
+  background: #e0e0e0;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.loading-progress {
+  height: 100%;
+  background: linear-gradient(90deg, #667eea, #764ba2);
+  animation: loadProgress 1.5s ease-in-out;
+  border-radius: 10px;
+}
+
+@keyframes loadProgress {
+  from {
+    width: 0%;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+/* ==========================================
+   RESPONSIVE
+   ========================================== */
+@media (max-width: 768px) {
+  .login-card {
+    padding: 30px 20px;
+  }
+  
+  .login-logo h1 {
+    font-size: 2.5rem;
+  }
+  
+  .logo-icon {
+    font-size: 60px;
+  }
+  
+  .login-benefits {
+    grid-template-columns: 1fr;
+  }
+  
+  .login-stats {
+    flex-direction: column;
+  }
+  
+  .chess-piece {
+    font-size: 50px;
+  }
+}
