@@ -354,36 +354,162 @@ footer p {
 /* ========================================
    RESPONSIVE
    ======================================== */
+/* ========================================
+   RESPONSIVE MÓVIL MEJORADO
+   ======================================== */
 @media (max-width: 768px) {
-  .game-container {
-    flex-direction: column;
+  .App {
+    padding: 10px;
   }
   
-  .chessboard-wrapper {
-    overflow-x: auto;
-    width: 100%;
-    max-width: 500px;
+  .game-container {
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .App-header {
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 15px;
   }
   
   .App-header h1 {
-    font-size: 2rem;
+    font-size: 1.8rem;
+  }
+  
+  .App-header p {
+    font-size: 0.9rem;
+    text-align: center;
+  }
+  
+  .back-btn {
+    position: static;
+    width: 100%;
+    margin-bottom: 10px;
+  }
+  
+  .chessboard-wrapper {
+    width: 100vw;
+    max-width: calc(100vw - 20px);
+    height: auto;
+    margin: 0 auto;
+  }
+  
+  .chessboard-wrapper > div {
+    width: 100% !important;
+    max-width: 400px !important;
+    height: auto !important;
+    aspect-ratio: 1 / 1;
+    margin: 0 auto;
   }
   
   .controls {
     flex-direction: column;
-  }
-  
-  .training-legend {
     gap: 10px;
   }
   
+  .controls button {
+    width: 100%;
+    padding: 12px;
+    font-size: 1rem;
+  }
+  
+  .training-legend {
+    gap: 8px;
+    padding: 10px;
+    flex-wrap: wrap;
+  }
+  
+  .legend-item {
+    font-size: 0.75rem;
+    gap: 4px;
+  }
+  
+  .legend-color {
+    width: 15px;
+    height: 15px;
+  }
+  
+  .game-info {
+    padding: 12px;
+  }
+  
+  .game-info p {
+    font-size: 0.95rem;
+    margin: 8px 0;
+  }
+  
+  .analysis-section {
+    padding: 15px;
+    max-width: 100%;
+  }
+  
+  .analysis-section h2 {
+    font-size: 1.3rem;
+  }
+  
+  .analysis-box {
+    padding: 15px;
+    min-height: 150px;
+    font-size: 0.9rem;
+  }
+  
+  .history {
+    padding: 12px;
+    max-height: 200px;
+  }
+  
+  .moves-list {
+    font-size: 0.9rem;
+  }
+  
   .skull-animation {
-    font-size: 50px;
+    font-size: 40px;
   }
   
   .confetti {
-    width: 8px;
-    height: 8px;
+    width: 6px;
+    height: 6px;
+  }
+  
+  footer {
+    margin-top: 30px;
+    font-size: 0.85rem;
+  }
+}
+
+/* Móviles pequeños (iPhone SE, etc) */
+@media (max-width: 375px) {
+  .App-header h1 {
+    font-size: 1.5rem;
+  }
+  
+  .chessboard-wrapper > div {
+    max-width: 320px !important;
+  }
+  
+  .controls button {
+    font-size: 0.9rem;
+    padding: 10px;
+  }
+  
+  .legend-item {
+    font-size: 0.7rem;
+  }
+}
+
+/* Tablets */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .chessboard-wrapper > div {
+    max-width: 450px !important;
+  }
+  
+  .game-container {
+    flex-direction: column;
+  }
+  
+  .analysis-section {
+    max-width: 100%;
   }
 }
 

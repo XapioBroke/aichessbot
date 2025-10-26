@@ -1,4 +1,18 @@
-import React, { useState } from 'react';
+<button 
+                className={`diff-btn ${selectedDifficulty === 'medium' ? 'active' : ''}`}
+                onClick={() => setSelectedDifficulty('medium')}
+              >
+                <span className="diff-icon">⚔️</span>
+                <span className="diff-name">Intermedio</span>
+                <span className="diff-desc">Stockfish ELO ~1500 | Táctica sólida</span>
+              </button>
+              <button 
+                className={`diff-btn ${selectedDifficulty === 'hard' ? 'active' : ''}`}
+                onClick={() => setSelectedDifficulty('hard')}
+              >
+                <span className="diff-icon">👑</span>
+                <span className="diff-name">Avanzado</span>
+                <span className="diff-desc">Stockfish ELO ~2200 | Experto implacableimport React, { useState } from 'react';
 import AuthButton from './AuthButton';
 import './WelcomeScreen.css';
 
@@ -56,21 +70,7 @@ function WelcomeScreen({ onStart, onSelectTheme }) {
                 <span className="diff-name">Principiante</span>
                 <span className="diff-desc">Movimientos aleatorios + Entrenamiento</span>
               </button>
-              <button 
-                className={`diff-btn ${selectedDifficulty === 'medium' ? 'active' : ''}`}
-                onClick={() => setSelectedDifficulty('medium')}
-              >
-                <span className="diff-icon">⚔️</span>
-                <span className="diff-name">Intermedio</span>
-                <span className="diff-desc">Prioriza capturas y jaques</span>
-              </button>
-              <button 
-                className={`diff-btn ${selectedDifficulty === 'hard' ? 'active' : ''}`}
-                onClick={() => setSelectedDifficulty('hard')}
-              >
-                <span className="diff-icon">👑</span>
-                <span className="diff-name">Avanzado</span>
-                <span className="diff-desc">Táctica agresiva y estratégica</span>
+</span>
               </button>
             </div>
           </div>

@@ -1,6 +1,7 @@
 {
-  "short_name": "React App",
-  "name": "Create React App Sample",
+  "short_name": "AiChessBot",
+  "name": "AiChessBot - Entrena Ajedrez con IA",
+  "description": "Mejora tu ajedrez con inteligencia artificial. Análisis, entrenamiento y partidas contra IA de diferentes niveles.",
   "icons": [
     {
       "src": "favicon.ico",
@@ -10,16 +11,28 @@
     {
       "src": "logo192.png",
       "type": "image/png",
-      "sizes": "192x192"
+      "sizes": "192x192",
+      "purpose": "any maskable"
     },
     {
       "src": "logo512.png",
       "type": "image/png",
-      "sizes": "512x512"
+      "sizes": "512x512",
+      "purpose": "any maskable"
     }
   ],
   "start_url": ".",
   "display": "standalone",
-  "theme_color": "#000000",
-  "background_color": "#ffffff"
+  "theme_color": "#667eea",
+  "background_color": "#667eea",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "categories": ["games", "education", "entertainment"],
+  "screenshots": [
+    {
+      "src": "/screenshot1.png",
+      "sizes": "540x720",
+      "type": "image/png"
+    }
+  ]
 }

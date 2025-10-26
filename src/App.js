@@ -5,6 +5,7 @@ import LoginScreen from './LoginScreen';
 import WelcomeScreen from './WelcomeScreen';
 import AuthButton from './AuthButton';
 import { saveGame, updateUserStats } from './firebase';
+import { getStockfishEngine } from './stockfishEngine';
 import './App.css';
 
 function App() {

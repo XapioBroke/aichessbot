@@ -410,30 +410,131 @@
 }
 
 /* ==========================================
-   RESPONSIVE
+   RESPONSIVE MEJORADO
    ========================================== */
 @media (max-width: 768px) {
+  .login-screen {
+    padding: 10px;
+  }
+  
+  .login-container {
+    max-width: 100%;
+  }
+  
   .login-card {
-    padding: 30px 20px;
+    padding: 25px 20px;
   }
   
   .login-logo h1 {
-    font-size: 2.5rem;
+    font-size: 2.2rem;
   }
   
   .logo-icon {
     font-size: 60px;
   }
   
+  .tagline {
+    font-size: 1rem;
+  }
+  
+  .login-card h2 {
+    font-size: 1.5rem;
+  }
+  
+  .login-subtitle {
+    font-size: 0.9rem;
+  }
+  
+  .google-login-btn,
+  .guest-btn {
+    padding: 13px;
+    font-size: 1rem;
+  }
+  
   .login-benefits {
     grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .benefit-item {
+    padding: 10px;
+    font-size: 0.85rem;
+  }
+  
+  .benefit-icon {
+    font-size: 1.3rem;
   }
   
   .login-stats {
     flex-direction: column;
+    gap: 15px;
+  }
+  
+  .stat-box {
+    padding: 15px;
+  }
+  
+  .stat-number {
+    font-size: 1.5rem;
   }
   
   .chess-piece {
     font-size: 50px;
+  }
+  
+  .welcome-animation h2 {
+    font-size: 1.6rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .login-card {
+    padding: 20px 15px;
+  }
+  
+  .login-logo h1 {
+    font-size: 1.8rem;
+  }
+  
+  .logo-icon {
+    font-size: 50px;
+  }
+  
+  .login-card h2 {
+    font-size: 1.3rem;
+  }
+  
+  .google-login-btn,
+  .guest-btn {
+    font-size: 0.95rem;
+    padding: 12px;
+  }
+  
+  .chess-piece {
+    font-size: 40px;
+  }
+}
+
+/* Landscape mode */
+@media (max-height: 500px) and (orientation: landscape) {
+  .login-screen {
+    padding: 10px;
+  }
+  
+  .logo-icon {
+    font-size: 40px;
+  }
+  
+  .login-logo h1 {
+    font-size: 1.8rem;
+    margin: 5px 0;
+  }
+  
+  .login-card {
+    padding: 20px;
+  }
+  
+  .login-stats {
+    display: none;
   }
 }
