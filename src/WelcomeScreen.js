@@ -52,7 +52,7 @@ function WelcomeScreen({ onStart, onSelectTheme }) {
               >
                 <span className="diff-icon">🌱</span>
                 <span className="diff-name">Principiante</span>
-                <span className="diff-desc">Movimientos aleatorios + Entrenamiento</span>
+                <span className="diff-desc">ELO ~600 | Muchos errores</span>
               </button>
               <button 
                 className={`diff-btn ${selectedDifficulty === 'medium' ? 'active' : ''}`}
@@ -60,7 +60,7 @@ function WelcomeScreen({ onStart, onSelectTheme }) {
               >
                 <span className="diff-icon">⚔️</span>
                 <span className="diff-name">Intermedio</span>
-                <span className="diff-desc">Stockfish ELO ~1500 | Táctica sólida</span>
+                <span className="diff-desc">ELO ~1700 | Táctica sólida</span>
               </button>
               <button 
                 className={`diff-btn ${selectedDifficulty === 'hard' ? 'active' : ''}`}
@@ -68,7 +68,7 @@ function WelcomeScreen({ onStart, onSelectTheme }) {
               >
                 <span className="diff-icon">👑</span>
                 <span className="diff-name">Avanzado</span>
-                <span className="diff-desc">Stockfish ELO ~2200 | Experto implacable</span>
+                <span className="diff-desc">ELO ~2700 | Gran Maestro</span>
               </button>
             </div>
           </div>
