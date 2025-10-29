@@ -5,6 +5,7 @@ import LoginScreen from './LoginScreen';
 import WelcomeScreen from './WelcomeScreen';
 import AuthButton from './AuthButton';
 import { saveGame, updateUserStats } from './firebase';
+import { getStockfishWorker } from './stockfishWorker';
 import './App.css';
 
 function App() {
@@ -27,6 +28,7 @@ function App() {
   const [user, setUser] = useState(null);
   const [gameStartTime, setGameStartTime] = useState(null);
   const [aiThinking, setAiThinking] = useState(false);
+  const [engineReady, setEngineReady] = useState(false);
 
   const themes = {
     classic: { light: '#f0d9b5', dark: '#b58863' },
@@ -34,6 +36,19 @@ function App() {
     ocean: { light: '#a8dadc', dark: '#457b9d' },
     sunset: { light: '#ffd6a5', dark: '#ff8c42' }
   };
+
+  // Inicializar Stockfish
+  useEffect(() => {
+    const initEngine = async () => {
+      const worker = getStockfishWorker();
+      const ready = await worker.init();
+      setEngineReady(ready);
+      if (ready) {
+        console.log('🚀 Stockfish 16 100% listo');
+      }
+    };
+    initEngine();
+  }, []);
 
   const findKingSquare = useCallback((color) => {
     const board = game.board();
@@ -237,7 +252,7 @@ function App() {
     }
   }
 
-  // MOTOR PROFESIONAL - 3 NIVELES ÚNICOS (600 / 1700 / 2700+ ELO)
+  // MOTOR STOCKFISH LOCAL - 100% ESTABLE
   async function makeAIMove(currentGame) {
     if (aiThinking) return;
     
@@ -249,138 +264,47 @@ function App() {
     }
 
     try {
-      const fen = currentGame.fen();
+      const worker = getStockfishWorker();
       
-      // NIVEL 1: PRINCIPIANTE (600 ELO) - Errores frecuentes
-      if (difficulty === 'easy') {
-        await new Promise(resolve => setTimeout(resolve, 150 + Math.random() * 200));
+      // Delay natural
+      await new Promise(resolve => setTimeout(resolve, 200 + Math.random() * 300));
+      
+      const fen = currentGame.fen();
+      const uciMove = await worker.getBestMove(fen, difficulty);
+      
+      if (uciMove) {
+        const from = uciMove.substring(0, 2);
+        const to = uciMove.substring(2, 4);
+        const promotion = uciMove.length > 4 ? uciMove[4] : undefined;
         
-        // 60% movimientos aleatorios, 30% capturas obvias, 10% desarrollo
-        const rand = Math.random();
+        const move = currentGame.move({ from, to, promotion });
+        setGame(new Chess(currentGame.fen()));
+        setGameHistory(prev => [...prev, move.san]);
+      } else {
+        // Fallback tácticamente inteligente
+        const captures = moves.filter(m => m.captured);
+        const checks = moves.filter(m => m.san.includes('+'));
         
-        if (rand < 0.6) {
-          // Movimiento completamente aleatorio (incluso malos)
-          const randomMove = moves[Math.floor(Math.random() * moves.length)];
-          currentGame.move(randomMove);
-          setGame(new Chess(currentGame.fen()));
-          setGameHistory(prev => [...prev, randomMove.san]);
-        } else if (rand < 0.9) {
-          // Capturas sin pensar
-          const captures = moves.filter(m => m.captured);
-          const chosen = captures.length > 0 
-            ? captures[Math.floor(Math.random() * captures.length)]
-            : moves[Math.floor(Math.random() * moves.length)];
-          currentGame.move(chosen);
-          setGame(new Chess(currentGame.fen()));
-          setGameHistory(prev => [...prev, chosen.san]);
+        let chosenMove;
+        if (checks.length > 0 && Math.random() > 0.5) {
+          chosenMove = checks[0];
+        } else if (captures.length > 0 && Math.random() > 0.3) {
+          chosenMove = captures[0];
         } else {
-          // 10% desarrollo básico
-          const development = moves.filter(m => 
-            ['e4','e5','d4','d5','Nf3','Nc3','Nf6','Nc6'].includes(m.san)
-          );
-          const chosen = development.length > 0
-            ? development[Math.floor(Math.random() * development.length)]
-            : moves[Math.floor(Math.random() * moves.length)];
-          currentGame.move(chosen);
-          setGame(new Chess(currentGame.fen()));
-          setGameHistory(prev => [...prev, chosen.san]);
+          chosenMove = moves[Math.floor(Math.random() * moves.length)];
         }
-      } 
-      // NIVEL 2: INTERMEDIO (1700 ELO) - Mezcla táctica + errores ocasionales
-      else if (difficulty === 'medium') {
-        await new Promise(resolve => setTimeout(resolve, 250 + Math.random() * 350));
         
-        // 70% Lichess + 30% aleatorio (simula errores humanos)
-        if (Math.random() < 0.7) {
-          const response = await fetch(
-            `https://lichess.org/api/cloud-eval?fen=${encodeURIComponent(fen)}&multiPv=3`,
-            { method: 'GET', headers: { 'Accept': 'application/json' } }
-          );
-
-          if (response.ok) {
-            const data = await response.json();
-            
-            if (data.pvs && data.pvs.length > 0) {
-              // Elegir entre las 3 mejores jugadas (simula imperfección)
-              const randomPv = data.pvs[Math.floor(Math.random() * Math.min(3, data.pvs.length))];
-              
-              if (randomPv.moves) {
-                const uciMove = randomPv.moves.split(' ')[0];
-                const from = uciMove.substring(0, 2);
-                const to = uciMove.substring(2, 4);
-                const promotion = uciMove.length > 4 ? uciMove[4] : undefined;
-                
-                const move = currentGame.move({ from, to, promotion });
-                setGame(new Chess(currentGame.fen()));
-                setGameHistory(prev => [...prev, move.san]);
-              } else {
-                throw new Error('No moves');
-              }
-            } else {
-              throw new Error('No PVs');
-            }
-          } else {
-            throw new Error('API error');
-          }
-        } else {
-          // Error intencional (jugada subóptima)
-          const captures = moves.filter(m => m.captured);
-          const checks = moves.filter(m => m.san.includes('+'));
-          const tactical = [...captures, ...checks];
-          
-          const chosen = tactical.length > 0 && Math.random() > 0.4
-            ? tactical[Math.floor(Math.random() * tactical.length)]
-            : moves[Math.floor(Math.random() * moves.length)];
-          
-          currentGame.move(chosen);
-          setGame(new Chess(currentGame.fen()));
-          setGameHistory(prev => [...prev, chosen.san]);
-        }
-      }
-      // NIVEL 3: AVANZADO (2700+ ELO) - Lichess puro, sin errores
-      else {
-        await new Promise(resolve => setTimeout(resolve, 300 + Math.random() * 400));
-        
-        const response = await fetch(
-          `https://lichess.org/api/cloud-eval?fen=${encodeURIComponent(fen)}&multiPv=1`,
-          { method: 'GET', headers: { 'Accept': 'application/json' } }
-        );
-
-        if (!response.ok) throw new Error('Lichess API error');
-
-        const data = await response.json();
-        
-        if (data.pvs && data.pvs.length > 0 && data.pvs[0].moves) {
-          const uciMove = data.pvs[0].moves.split(' ')[0];
-          const from = uciMove.substring(0, 2);
-          const to = uciMove.substring(2, 4);
-          const promotion = uciMove.length > 4 ? uciMove[4] : undefined;
-          
-          const move = currentGame.move({ from, to, promotion });
-          setGame(new Chess(currentGame.fen()));
-          setGameHistory(prev => [...prev, move.san]);
-        } else {
-          throw new Error('No moves from Lichess');
-        }
+        currentGame.move(chosenMove);
+        setGame(new Chess(currentGame.fen()));
+        setGameHistory(prev => [...prev, chosenMove.san]);
       }
       
     } catch (error) {
-      // Fallback inteligente
-      const captures = moves.filter(m => m.captured);
-      const checks = moves.filter(m => m.san.includes('+'));
-      
-      let chosenMove;
-      if (checks.length > 0 && Math.random() > 0.5) {
-        chosenMove = checks[0];
-      } else if (captures.length > 0 && Math.random() > 0.3) {
-        chosenMove = captures[0];
-      } else {
-        chosenMove = moves[Math.floor(Math.random() * moves.length)];
-      }
-      
-      currentGame.move(chosenMove);
+      console.error('Error en IA:', error);
+      const randomMove = moves[Math.floor(Math.random() * moves.length)];
+      currentGame.move(randomMove);
       setGame(new Chess(currentGame.fen()));
-      setGameHistory(prev => [...prev, chosenMove.san]);
+      setGameHistory(prev => [...prev, randomMove.san]);
     }
     
     setAiThinking(false);
@@ -393,9 +317,10 @@ function App() {
     }
 
     setLoading(true);
-    setAnalysis('🤖 Analizando con Lichess...');
+    setAnalysis('🤖 Analizando...');
 
     try {
+      const worker = getStockfishWorker();
       const mistakes = [];
       const tempGame = new Chess();
       
@@ -406,42 +331,17 @@ function App() {
         
         if (isPlayerMove) {
           const fenBefore = tempGame.fen();
-          const responseBefore = await fetch(
-            `https://lichess.org/api/cloud-eval?fen=${encodeURIComponent(fenBefore)}&multiPv=1`
-          );
-          const dataBefore = await responseBefore.json();
+          const bestBefore = await worker.getBestMove(fenBefore, 'hard');
           
           tempGame.move(move);
           
-          const fenAfter = tempGame.fen();
-          const responseAfter = await fetch(
-            `https://lichess.org/api/cloud-eval?fen=${encodeURIComponent(fenAfter)}&multiPv=1`
-          );
-          const dataAfter = await responseAfter.json();
-          
-          let evalBefore = 0;
-          let evalAfter = 0;
-          let better = null;
-          
-          if (dataBefore.pvs && dataBefore.pvs[0]) {
-            evalBefore = dataBefore.pvs[0].cp ? dataBefore.pvs[0].cp / 100 : 0;
-            if (dataBefore.pvs[0].moves) {
-              better = dataBefore.pvs[0].moves.split(' ')[0];
-            }
-          }
-          
-          if (dataAfter.pvs && dataAfter.pvs[0]) {
-            evalAfter = dataAfter.pvs[0].cp ? dataAfter.pvs[0].cp / 100 : 0;
-          }
-          
-          const diff = Math.abs(evalAfter - evalBefore);
-          if (diff > 1.5) {
+          // Si el movimiento no es el mejor, es un error
+          const playerMove = move.toLowerCase();
+          if (bestBefore && !playerMove.includes(bestBefore.substring(0, 2))) {
             mistakes.push({
               move: move,
               moveNumber: Math.floor(i / 2) + 1,
-              evaluation: evalAfter,
-              better: better,
-              loss: diff.toFixed(2)
+              better: bestBefore
             });
           }
         } else {
@@ -457,7 +357,6 @@ function App() {
         
         mistakes.forEach((mistake, i) => {
           analysisText += `${i + 1}. Mov. ${mistake.moveNumber}: ${mistake.move}\n`;
-          analysisText += `   Pérdida: ${mistake.loss} pawns\n`;
           if (mistake.better) {
             analysisText += `   💡 Mejor: ${mistake.better}\n`;
           }
@@ -711,7 +610,7 @@ function App() {
           <div className="game-info">
             <p><strong>Turno:</strong> {game.turn() === playerColor ? 'Tu turno' : 'Turno de IA'}</p>
             <p><strong>Movimientos:</strong> {gameHistory.length}</p>
-            <p><strong>Motor:</strong> 🧠 Lichess Cloud</p>
+            <p><strong>Motor:</strong> {engineReady ? '🧠 Stockfish 16' : '⚠️ Cargando...'}</p>
             {threats.length > 0 && trainingMode && (
               <p className="alert">⚠️ {threats.length} amenaza{threats.length > 1 ? 's' : ''} detectada{threats.length > 1 ? 's' : ''}</p>
             )}
@@ -749,7 +648,7 @@ function App() {
       </div>
 
       <footer>
-        <p>🚀 Powered by Lichess Cloud Engine</p>
+        <p>🚀 Powered by Stockfish 16</p>
       </footer>
     </div>
   );
