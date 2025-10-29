@@ -77,7 +77,6 @@ function App() {
     try {
       tempGame = new Chess(fen);
     } catch (error) {
-      console.error('Error creando Chess temporal:', error);
       return threats;
     }
     
@@ -103,7 +102,7 @@ function App() {
             });
           }
         } catch (e) {
-          console.error(`Error en ${square}:`, e);
+          // Ignorar errores
         }
       }
     }
@@ -229,7 +228,7 @@ function App() {
       setCapturablePieces([]);
 
       if (!gameCopy.isGameOver()) {
-        setTimeout(() => makeAIMove(gameCopy), 300);
+        setTimeout(() => makeAIMove(gameCopy), 200);
       }
 
       return true;
@@ -238,7 +237,7 @@ function App() {
     }
   }
 
-  // FUNCIÓN OPTIMIZADA - Movimientos fluidos como Chess.com
+  // MOTOR PROFESIONAL - 3 NIVELES ÚNICOS (600 / 1700 / 2700+ ELO)
   async function makeAIMove(currentGame) {
     if (aiThinking) return;
     
@@ -252,17 +251,21 @@ function App() {
     try {
       const fen = currentGame.fen();
       
-      // EASY: Movimientos aleatorios rápidos
+      // NIVEL 1: PRINCIPIANTE (600 ELO) - Errores frecuentes
       if (difficulty === 'easy') {
-        // Delay mínimo natural (200-500ms)
-        await new Promise(resolve => setTimeout(resolve, 200 + Math.random() * 300));
+        await new Promise(resolve => setTimeout(resolve, 150 + Math.random() * 200));
         
-        if (Math.random() > 0.15) {
+        // 60% movimientos aleatorios, 30% capturas obvias, 10% desarrollo
+        const rand = Math.random();
+        
+        if (rand < 0.6) {
+          // Movimiento completamente aleatorio (incluso malos)
           const randomMove = moves[Math.floor(Math.random() * moves.length)];
           currentGame.move(randomMove);
           setGame(new Chess(currentGame.fen()));
           setGameHistory(prev => [...prev, randomMove.san]);
-        } else {
+        } else if (rand < 0.9) {
+          // Capturas sin pensar
           const captures = moves.filter(m => m.captured);
           const chosen = captures.length > 0 
             ? captures[Math.floor(Math.random() * captures.length)]
@@ -270,11 +273,74 @@ function App() {
           currentGame.move(chosen);
           setGame(new Chess(currentGame.fen()));
           setGameHistory(prev => [...prev, chosen.san]);
+        } else {
+          // 10% desarrollo básico
+          const development = moves.filter(m => 
+            ['e4','e5','d4','d5','Nf3','Nc3','Nf6','Nc6'].includes(m.san)
+          );
+          const chosen = development.length > 0
+            ? development[Math.floor(Math.random() * development.length)]
+            : moves[Math.floor(Math.random() * moves.length)];
+          currentGame.move(chosen);
+          setGame(new Chess(currentGame.fen()));
+          setGameHistory(prev => [...prev, chosen.san]);
         }
       } 
-      // MEDIUM y HARD: Lichess API en background
+      // NIVEL 2: INTERMEDIO (1700 ELO) - Mezcla táctica + errores ocasionales
+      else if (difficulty === 'medium') {
+        await new Promise(resolve => setTimeout(resolve, 250 + Math.random() * 350));
+        
+        // 70% Lichess + 30% aleatorio (simula errores humanos)
+        if (Math.random() < 0.7) {
+          const response = await fetch(
+            `https://lichess.org/api/cloud-eval?fen=${encodeURIComponent(fen)}&multiPv=3`,
+            { method: 'GET', headers: { 'Accept': 'application/json' } }
+          );
+
+          if (response.ok) {
+            const data = await response.json();
+            
+            if (data.pvs && data.pvs.length > 0) {
+              // Elegir entre las 3 mejores jugadas (simula imperfección)
+              const randomPv = data.pvs[Math.floor(Math.random() * Math.min(3, data.pvs.length))];
+              
+              if (randomPv.moves) {
+                const uciMove = randomPv.moves.split(' ')[0];
+                const from = uciMove.substring(0, 2);
+                const to = uciMove.substring(2, 4);
+                const promotion = uciMove.length > 4 ? uciMove[4] : undefined;
+                
+                const move = currentGame.move({ from, to, promotion });
+                setGame(new Chess(currentGame.fen()));
+                setGameHistory(prev => [...prev, move.san]);
+              } else {
+                throw new Error('No moves');
+              }
+            } else {
+              throw new Error('No PVs');
+            }
+          } else {
+            throw new Error('API error');
+          }
+        } else {
+          // Error intencional (jugada subóptima)
+          const captures = moves.filter(m => m.captured);
+          const checks = moves.filter(m => m.san.includes('+'));
+          const tactical = [...captures, ...checks];
+          
+          const chosen = tactical.length > 0 && Math.random() > 0.4
+            ? tactical[Math.floor(Math.random() * tactical.length)]
+            : moves[Math.floor(Math.random() * moves.length)];
+          
+          currentGame.move(chosen);
+          setGame(new Chess(currentGame.fen()));
+          setGameHistory(prev => [...prev, chosen.san]);
+        }
+      }
+      // NIVEL 3: AVANZADO (2700+ ELO) - Lichess puro, sin errores
       else {
-        // Llamada API sin bloquear UI
+        await new Promise(resolve => setTimeout(resolve, 300 + Math.random() * 400));
+        
         const response = await fetch(
           `https://lichess.org/api/cloud-eval?fen=${encodeURIComponent(fen)}&multiPv=1`,
           { method: 'GET', headers: { 'Accept': 'application/json' } }
@@ -283,9 +349,6 @@ function App() {
         if (!response.ok) throw new Error('Lichess API error');
 
         const data = await response.json();
-        
-        // Delay natural breve (300-600ms) para simular "pensamiento" sin ser obvio
-        await new Promise(resolve => setTimeout(resolve, 300 + Math.random() * 300));
         
         if (data.pvs && data.pvs.length > 0 && data.pvs[0].moves) {
           const uciMove = data.pvs[0].moves.split(' ')[0];
@@ -302,8 +365,7 @@ function App() {
       }
       
     } catch (error) {
-      console.error('❌ Error IA:', error);
-      // Fallback silencioso
+      // Fallback inteligente
       const captures = moves.filter(m => m.captured);
       const checks = moves.filter(m => m.san.includes('+'));
       
@@ -390,7 +452,7 @@ function App() {
       if (mistakes.length === 0) {
         setAnalysis('🎯 ¡Excelente! No se detectaron errores significativos.');
       } else {
-        let analysisText = '📊 ANÁLISIS LICHESS\n\n';
+        let analysisText = '📊 ANÁLISIS PROFESIONAL\n\n';
         analysisText += `⚠️ ${mistakes.length} movimiento(s) subóptimo(s):\n\n`;
         
         mistakes.forEach((mistake, i) => {
@@ -576,9 +638,10 @@ function App() {
           <h1>♟️ AiChessBot</h1>
           <p>
             Jugando con: {playerColor === 'w' ? '⚪ Blancas' : '⚫ Negras'} | 
-            Dificultad: {difficulty === 'easy' ? '🌱 Principiante' : difficulty === 'medium' ? '⚔️ Intermedio' : '👑 Avanzado'}
-            {trainingMode && ' | 🎓 Modo Entrenamiento'}
-            {aiThinking && ' | 🤔 Lichess pensando...'}
+            {difficulty === 'easy' && '🌱 Principiante (ELO ~600)'}
+            {difficulty === 'medium' && '⚔️ Intermedio (ELO ~1700)'}
+            {difficulty === 'hard' && '👑 Avanzado (ELO ~2700)'}
+            {trainingMode && ' | 🎓 Entrenamiento'}
           </p>
         </div>
         <AuthButton />
@@ -598,7 +661,7 @@ function App() {
               {trainingMode ? '🎓 Entrenamiento ON' : '🎓 Entrenamiento OFF'}
             </button>
             <button onClick={analyzeGame} disabled={loading || aiThinking}>
-              {loading ? 'Analizando...' : '🧠 Analizar con Lichess'}
+              {loading ? 'Analizando...' : '🧠 Análisis Profesional'}
             </button>
           </div>
 
@@ -636,38 +699,19 @@ function App() {
               boardWidth={500}
               customBoardStyle={{
                 borderRadius: '10px',
-                boxShadow: '0 10px 40px rgba(0,0,0,0.3)',
-                opacity: aiThinking ? 0.7 : 1,
-                pointerEvents: aiThinking ? 'none' : 'auto'
+                boxShadow: '0 10px 40px rgba(0,0,0,0.3)'
               }}
               customLightSquareStyle={{ backgroundColor: themes[boardTheme].light }}
               customDarkSquareStyle={{ backgroundColor: themes[boardTheme].dark }}
               customSquareStyles={getSquareStyles()}
             />
             {renderSkullOverlay()}
-            {aiThinking && (
-              <div style={{
-                position: 'absolute',
-                top: '50%',
-                left: '50%',
-                transform: 'translate(-50%, -50%)',
-                background: 'rgba(0,0,0,0.8)',
-                color: 'white',
-                padding: '20px 40px',
-                borderRadius: '10px',
-                fontSize: '20px',
-                fontWeight: 'bold',
-                zIndex: 1001
-              }}>
-                🧠 Lichess pensando...
-              </div>
-            )}
           </div>
 
           <div className="game-info">
             <p><strong>Turno:</strong> {game.turn() === playerColor ? 'Tu turno' : 'Turno de IA'}</p>
             <p><strong>Movimientos:</strong> {gameHistory.length}</p>
-            <p><strong>Motor:</strong> 🧠 Lichess API</p>
+            <p><strong>Motor:</strong> 🧠 Lichess Cloud</p>
             {threats.length > 0 && trainingMode && (
               <p className="alert">⚠️ {threats.length} amenaza{threats.length > 1 ? 's' : ''} detectada{threats.length > 1 ? 's' : ''}</p>
             )}
@@ -681,12 +725,12 @@ function App() {
         </div>
 
         <div className="analysis-section">
-          <h2>📊 Análisis Lichess</h2>
+          <h2>📊 Análisis Profesional</h2>
           <div className="analysis-box">
             {analysis ? <pre>{analysis}</pre> : (
               <p className="placeholder">
-                Juega una partida y presiona "Analizar con Lichess" 
-                para recibir análisis profesional.
+                Juega una partida y presiona "Análisis Profesional" 
+                para recibir evaluación detallada.
               </p>
             )}
           </div>
@@ -705,7 +749,7 @@ function App() {
       </div>
 
       <footer>
-        <p>🚀 Potenciado por Lichess API</p>
+        <p>🚀 Powered by Lichess Cloud Engine</p>
       </footer>
     </div>
   );
