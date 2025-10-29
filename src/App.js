@@ -1,11 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Chess } from 'chess.js';
 import { Chessboard } from 'react-chessboard';
 import LoginScreen from './LoginScreen';
 import WelcomeScreen from './WelcomeScreen';
 import AuthButton from './AuthButton';
 import { saveGame, updateUserStats } from './firebase';
-import { getStockfishEngine } from './stockfishEngine';
 import './App.css';
 
 function App() {
@@ -27,6 +26,7 @@ function App() {
   const [checkmatedKingSquare, setCheckmatedKingSquare] = useState(null);
   const [user, setUser] = useState(null);
   const [gameStartTime, setGameStartTime] = useState(null);
+  const [aiThinking, setAiThinking] = useState(false);
 
   const themes = {
     classic: { light: '#f0d9b5', dark: '#b58863' },
@@ -35,36 +35,7 @@ function App() {
     sunset: { light: '#ffd6a5', dark: '#ff8c42' }
   };
 
-  useEffect(() => {
-    if (game.isCheckmate()) {
-      const losingColor = game.turn();
-      const kingSquare = findKingSquare(losingColor);
-      setCheckmatedKingSquare(kingSquare);
-      setShowConfetti(true);
-      setTimeout(() => setShowConfetti(false), 5000);
-      
-      if (user && gameStartTime) {
-        const duration = Math.floor((Date.now() - gameStartTime) / 1000);
-        const playerWon = losingColor !== playerColor;
-        
-        saveGame(user.uid, {
-          pgn: game.pgn(),
-          moves: gameHistory,
-          result: playerWon ? 'win' : 'loss',
-          difficulty: difficulty,
-          playerColor: playerColor,
-          duration: duration,
-          fen: game.fen()
-        });
-        
-        updateUserStats(user.uid, playerWon ? 'win' : 'loss');
-      }
-    } else {
-      setCheckmatedKingSquare(null);
-    }
-  }, [game, user, gameStartTime, gameHistory, difficulty, playerColor]);
-
-  function findKingSquare(color) {
+  const findKingSquare = useCallback((color) => {
     const board = game.board();
     for (let row = 0; row < 8; row++) {
       for (let col = 0; col < 8; col++) {
@@ -77,45 +48,9 @@ function App() {
       }
     }
     return null;
-  }
+  }, [game]);
 
-  useEffect(() => {
-    if (trainingMode && game.turn() === playerColor && gameStarted) {
-      const autoThreats = getAllThreatsToPlayerPieces();
-      setThreats(autoThreats);
-    } else if (!trainingMode) {
-      setThreats([]);
-    }
-  }, [game, trainingMode, gameStarted, playerColor]);
-
-  const handleStartGame = (selectedDifficulty, selectedColor) => {
-    setDifficulty(selectedDifficulty);
-    setTrainingMode(selectedDifficulty === 'easy');
-    
-    let finalColor = selectedColor;
-    if (selectedColor === 'random') {
-      finalColor = Math.random() < 0.5 ? 'w' : 'b';
-    }
-    setPlayerColor(finalColor);
-    setGameStarted(true);
-    setGameStartTime(Date.now());
-    
-    if (finalColor === 'b') {
-      const newGame = new Chess();
-      setTimeout(() => makeAIMove(newGame), 500);
-    }
-  };
-
-  const handleSelectTheme = (theme) => {
-    setBoardTheme(theme);
-  };
-
-  const handleAuthenticated = (authenticatedUser) => {
-    setUser(authenticatedUser);
-    setAuthenticated(true);
-  };
-
-  function getAllThreatsToPlayerPieces() {
+  const getAllThreatsToPlayerPieces = useCallback(() => {
     const threats = [];
     const board = game.board();
     const playerPieces = [];
@@ -133,8 +68,18 @@ function App() {
     
     const enemyColor = playerColor === 'w' ? 'b' : 'w';
     let fen = game.fen();
-    fen = fen.replace(` ${playerColor} `, ` ${enemyColor} `);
-    const tempGame = new Chess(fen);
+    const fenParts = fen.split(' ');
+    fenParts[1] = enemyColor;
+    fenParts[3] = '-';
+    fen = fenParts.join(' ');
+    
+    let tempGame;
+    try {
+      tempGame = new Chess(fen);
+    } catch (error) {
+      console.error('Error creando Chess temporal:', error);
+      return threats;
+    }
     
     for (let rowIndex = 0; rowIndex < 8; rowIndex++) {
       for (let colIndex = 0; colIndex < 8; colIndex++) {
@@ -164,7 +109,72 @@ function App() {
     }
     
     return threats;
-  }
+  }, [game, playerColor]);
+
+  useEffect(() => {
+    if (game.isCheckmate()) {
+      const losingColor = game.turn();
+      const kingSquare = findKingSquare(losingColor);
+      setCheckmatedKingSquare(kingSquare);
+      setShowConfetti(true);
+      setTimeout(() => setShowConfetti(false), 5000);
+      
+      if (user && gameStartTime) {
+        const duration = Math.floor((Date.now() - gameStartTime) / 1000);
+        const playerWon = losingColor !== playerColor;
+        
+        saveGame(user.uid, {
+          pgn: game.pgn(),
+          moves: gameHistory,
+          result: playerWon ? 'win' : 'loss',
+          difficulty: difficulty,
+          playerColor: playerColor,
+          duration: duration,
+          fen: game.fen()
+        });
+        
+        updateUserStats(user.uid, playerWon ? 'win' : 'loss');
+      }
+    } else {
+      setCheckmatedKingSquare(null);
+    }
+  }, [game, user, gameStartTime, gameHistory, difficulty, playerColor, findKingSquare]);
+
+  useEffect(() => {
+    if (trainingMode && game.turn() === playerColor && gameStarted) {
+      const autoThreats = getAllThreatsToPlayerPieces();
+      setThreats(autoThreats);
+    } else if (!trainingMode) {
+      setThreats([]);
+    }
+  }, [game, trainingMode, gameStarted, playerColor, getAllThreatsToPlayerPieces]);
+
+  const handleStartGame = (selectedDifficulty, selectedColor) => {
+    setDifficulty(selectedDifficulty);
+    setTrainingMode(selectedDifficulty === 'easy');
+    
+    let finalColor = selectedColor;
+    if (selectedColor === 'random') {
+      finalColor = Math.random() < 0.5 ? 'w' : 'b';
+    }
+    setPlayerColor(finalColor);
+    setGameStarted(true);
+    setGameStartTime(Date.now());
+    
+    if (finalColor === 'b') {
+      const newGame = new Chess();
+      setTimeout(() => makeAIMove(newGame), 500);
+    }
+  };
+
+  const handleSelectTheme = (theme) => {
+    setBoardTheme(theme);
+  };
+
+  const handleAuthenticated = (authenticatedUser) => {
+    setUser(authenticatedUser);
+    setAuthenticated(true);
+  };
 
   function getMoveOptions(square) {
     const moves = game.moves({ square: square, verbose: true });
@@ -199,6 +209,8 @@ function App() {
 
   function makeMove(sourceSquare, targetSquare) {
     if (game.turn() !== playerColor) return false;
+    if (aiThinking) return false;
+    
     const gameCopy = new Chess(game.fen());
     
     try {
@@ -217,7 +229,7 @@ function App() {
       setCapturablePieces([]);
 
       if (!gameCopy.isGameOver()) {
-        setTimeout(() => makeAIMove(gameCopy), 500);
+        setTimeout(() => makeAIMove(gameCopy), 300);
       }
 
       return true;
@@ -226,97 +238,90 @@ function App() {
     }
   }
 
-  function makeAIMove(currentGame) {
-    const moves = currentGame.moves({ verbose: true });
-    if (moves.length === 0) return;
-
-    let selectedMove;
+  // FUNCIÓN OPTIMIZADA - Movimientos fluidos como Chess.com
+  async function makeAIMove(currentGame) {
+    if (aiThinking) return;
     
-    if (difficulty === 'easy') {
-      selectedMove = moves[Math.floor(Math.random() * moves.length)];
-    } 
-    else if (difficulty === 'medium') {
-      const checkmates = moves.filter(m => {
-        const testGame = new Chess(currentGame.fen());
-        testGame.move(m);
-        return testGame.isCheckmate();
-      });
+    setAiThinking(true);
+    const moves = currentGame.moves({ verbose: true });
+    if (moves.length === 0) {
+      setAiThinking(false);
+      return;
+    }
+
+    try {
+      const fen = currentGame.fen();
       
-      if (checkmates.length > 0) {
-        selectedMove = checkmates[0];
-      } else {
-        const checks = moves.filter(m => m.san.includes('+'));
-        const captures = moves.filter(m => m.captured);
-        const centerMoves = moves.filter(m => ['e4', 'e5', 'd4', 'd5'].includes(m.to));
+      // EASY: Movimientos aleatorios rápidos
+      if (difficulty === 'easy') {
+        // Delay mínimo natural (200-500ms)
+        await new Promise(resolve => setTimeout(resolve, 200 + Math.random() * 300));
         
-        if (checks.length > 0) {
-          selectedMove = checks[Math.floor(Math.random() * checks.length)];
-        } else if (captures.length > 0) {
-          captures.sort((a, b) => {
-            const values = { p: 1, n: 3, b: 3, r: 5, q: 9 };
-            return (values[b.captured] || 0) - (values[a.captured] || 0);
-          });
-          selectedMove = captures[0];
-        } else if (centerMoves.length > 0) {
-          selectedMove = centerMoves[Math.floor(Math.random() * centerMoves.length)];
+        if (Math.random() > 0.15) {
+          const randomMove = moves[Math.floor(Math.random() * moves.length)];
+          currentGame.move(randomMove);
+          setGame(new Chess(currentGame.fen()));
+          setGameHistory(prev => [...prev, randomMove.san]);
         } else {
-          selectedMove = moves[Math.floor(Math.random() * moves.length)];
+          const captures = moves.filter(m => m.captured);
+          const chosen = captures.length > 0 
+            ? captures[Math.floor(Math.random() * captures.length)]
+            : moves[Math.floor(Math.random() * moves.length)];
+          currentGame.move(chosen);
+          setGame(new Chess(currentGame.fen()));
+          setGameHistory(prev => [...prev, chosen.san]);
+        }
+      } 
+      // MEDIUM y HARD: Lichess API en background
+      else {
+        // Llamada API sin bloquear UI
+        const response = await fetch(
+          `https://lichess.org/api/cloud-eval?fen=${encodeURIComponent(fen)}&multiPv=1`,
+          { method: 'GET', headers: { 'Accept': 'application/json' } }
+        );
+
+        if (!response.ok) throw new Error('Lichess API error');
+
+        const data = await response.json();
+        
+        // Delay natural breve (300-600ms) para simular "pensamiento" sin ser obvio
+        await new Promise(resolve => setTimeout(resolve, 300 + Math.random() * 300));
+        
+        if (data.pvs && data.pvs.length > 0 && data.pvs[0].moves) {
+          const uciMove = data.pvs[0].moves.split(' ')[0];
+          const from = uciMove.substring(0, 2);
+          const to = uciMove.substring(2, 4);
+          const promotion = uciMove.length > 4 ? uciMove[4] : undefined;
+          
+          const move = currentGame.move({ from, to, promotion });
+          setGame(new Chess(currentGame.fen()));
+          setGameHistory(prev => [...prev, move.san]);
+        } else {
+          throw new Error('No moves from Lichess');
         }
       }
-    }
-    else {
-      const checkmates = moves.filter(m => {
-        const testGame = new Chess(currentGame.fen());
-        testGame.move(m);
-        return testGame.isCheckmate();
-      });
       
-      if (checkmates.length > 0) {
-        selectedMove = checkmates[0];
+    } catch (error) {
+      console.error('❌ Error IA:', error);
+      // Fallback silencioso
+      const captures = moves.filter(m => m.captured);
+      const checks = moves.filter(m => m.san.includes('+'));
+      
+      let chosenMove;
+      if (checks.length > 0 && Math.random() > 0.5) {
+        chosenMove = checks[0];
+      } else if (captures.length > 0 && Math.random() > 0.3) {
+        chosenMove = captures[0];
       } else {
-        const evaluatedMoves = moves.map(move => {
-          let score = 0;
-          if (move.san.includes('+')) score += 30;
-          if (move.captured) {
-            const values = { p: 10, n: 30, b: 30, r: 50, q: 90 };
-            score += values[move.captured] || 0;
-          }
-          if (['e4', 'e5', 'd4', 'd5'].includes(move.to)) score += 15;
-          if (move.piece !== 'p' && ['1', '2', '7', '8'].includes(move.from[1])) {
-            score += 10;
-          }
-          
-          const testGame = new Chess(currentGame.fen());
-          testGame.move(move);
-          const threats = testGame.moves({ verbose: true }).filter(m => m.captured);
-          if (threats.some(t => ['q', 'r'].includes(t.captured))) {
-            score += 20;
-          }
-          
-          const afterMove = new Chess(currentGame.fen());
-          afterMove.move(move);
-          const enemyCaptures = afterMove.moves({ verbose: true }).filter(m => m.captured);
-          if (enemyCaptures.length > 0) {
-            const maxCapture = Math.max(...enemyCaptures.map(m => {
-              const values = { p: 10, n: 30, b: 30, r: 50, q: 90 };
-              return values[m.captured] || 0;
-            }));
-            score -= maxCapture / 2;
-          }
-          
-          return { move, score };
-        });
-        
-        evaluatedMoves.sort((a, b) => b.score - a.score);
-        const topMoves = evaluatedMoves.slice(0, 3);
-        const chosen = topMoves[Math.floor(Math.random() * topMoves.length)];
-        selectedMove = chosen.move;
+        chosenMove = moves[Math.floor(Math.random() * moves.length)];
       }
+      
+      currentGame.move(chosenMove);
+      setGame(new Chess(currentGame.fen()));
+      setGameHistory(prev => [...prev, chosenMove.san]);
     }
-
-    currentGame.move(selectedMove);
-    setGame(new Chess(currentGame.fen()));
-    setGameHistory(prev => [...prev, selectedMove.san || selectedMove]);
+    
+    setAiThinking(false);
   }
 
   async function analyzeGame() {
@@ -326,33 +331,83 @@ function App() {
     }
 
     setLoading(true);
-    setAnalysis('🤖 Analizando...');
+    setAnalysis('🤖 Analizando con Lichess...');
 
     try {
-      const response = await fetch('http://localhost:3001/api/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          pgn: game.pgn(),
-          moves: gameHistory,
-          playerColor: playerColor,
-          fen: game.fen(),
-          isCheckmate: game.isCheckmate(),
-          isCheck: game.isCheck(),
-          isDraw: game.isDraw()
-        })
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        setAnalysis(`📊 ANÁLISIS\n\n${data.analysis}\n\n---\n🎯 Movimientos: ${data.movesAnalyzed}`);
-      } else {
-        setAnalysis(`❌ ${data.error}`);
+      const mistakes = [];
+      const tempGame = new Chess();
+      
+      for (let i = 0; i < gameHistory.length; i++) {
+        const move = gameHistory[i];
+        const isPlayerMove = (i % 2 === 0 && playerColor === 'w') || 
+                            (i % 2 === 1 && playerColor === 'b');
+        
+        if (isPlayerMove) {
+          const fenBefore = tempGame.fen();
+          const responseBefore = await fetch(
+            `https://lichess.org/api/cloud-eval?fen=${encodeURIComponent(fenBefore)}&multiPv=1`
+          );
+          const dataBefore = await responseBefore.json();
+          
+          tempGame.move(move);
+          
+          const fenAfter = tempGame.fen();
+          const responseAfter = await fetch(
+            `https://lichess.org/api/cloud-eval?fen=${encodeURIComponent(fenAfter)}&multiPv=1`
+          );
+          const dataAfter = await responseAfter.json();
+          
+          let evalBefore = 0;
+          let evalAfter = 0;
+          let better = null;
+          
+          if (dataBefore.pvs && dataBefore.pvs[0]) {
+            evalBefore = dataBefore.pvs[0].cp ? dataBefore.pvs[0].cp / 100 : 0;
+            if (dataBefore.pvs[0].moves) {
+              better = dataBefore.pvs[0].moves.split(' ')[0];
+            }
+          }
+          
+          if (dataAfter.pvs && dataAfter.pvs[0]) {
+            evalAfter = dataAfter.pvs[0].cp ? dataAfter.pvs[0].cp / 100 : 0;
+          }
+          
+          const diff = Math.abs(evalAfter - evalBefore);
+          if (diff > 1.5) {
+            mistakes.push({
+              move: move,
+              moveNumber: Math.floor(i / 2) + 1,
+              evaluation: evalAfter,
+              better: better,
+              loss: diff.toFixed(2)
+            });
+          }
+        } else {
+          tempGame.move(move);
+        }
       }
+      
+      if (mistakes.length === 0) {
+        setAnalysis('🎯 ¡Excelente! No se detectaron errores significativos.');
+      } else {
+        let analysisText = '📊 ANÁLISIS LICHESS\n\n';
+        analysisText += `⚠️ ${mistakes.length} movimiento(s) subóptimo(s):\n\n`;
+        
+        mistakes.forEach((mistake, i) => {
+          analysisText += `${i + 1}. Mov. ${mistake.moveNumber}: ${mistake.move}\n`;
+          analysisText += `   Pérdida: ${mistake.loss} pawns\n`;
+          if (mistake.better) {
+            analysisText += `   💡 Mejor: ${mistake.better}\n`;
+          }
+          analysisText += '\n';
+        });
+        
+        setAnalysis(analysisText);
+      }
+      
       setLoading(false);
     } catch (error) {
-      setAnalysis(`❌ Backend no disponible\n\n${error.message}`);
+      setAnalysis(`❌ Error al analizar: ${error.message}`);
       setLoading(false);
     }
   }
@@ -369,6 +424,7 @@ function App() {
     setShowConfetti(false);
     setCheckmatedKingSquare(null);
     setGameStartTime(Date.now());
+    setAiThinking(false);
     
     if (playerColor === 'b') {
       setTimeout(() => makeAIMove(newGame), 500);
@@ -405,7 +461,6 @@ function App() {
       });
     });
     
-    // Piezas del jugador amenazadas (MORADO) - SIN BORDER
     threatenedPlayerPieces.forEach(square => {
       styles[square] = { 
         backgroundColor: 'rgba(147, 51, 234, 0.7)',
@@ -413,7 +468,6 @@ function App() {
       };
     });
     
-    // Amenazas enemigas (ROJO) - SIN BORDER
     threats.forEach(threat => {
       styles[threat.square] = { 
         backgroundColor: 'rgba(255, 0, 0, 0.8)',
@@ -421,7 +475,6 @@ function App() {
       };
     });
     
-    // Pieza seleccionada (Amarillo)
     if (selectedSquare) {
       styles[selectedSquare] = { 
         backgroundColor: 'rgba(255, 255, 0, 0.6)',
@@ -429,7 +482,6 @@ function App() {
       };
     }
     
-    // Movimientos posibles (Verde) - círculo interno sin alterar tamaño
     possibleMoves.forEach(square => {
       if (!capturablePieces.includes(square)) {
         styles[square] = { 
@@ -439,7 +491,6 @@ function App() {
       }
     });
     
-    // Capturable (Naranja) - SIN BORDER
     capturablePieces.forEach(square => {
       styles[square] = { 
         backgroundColor: 'rgba(255, 165, 0, 0.7)',
@@ -467,7 +518,6 @@ function App() {
   function renderSkullOverlay() {
     if (!checkmatedKingSquare) return null;
     
-    // Calcular posición exacta del rey en el tablero
     const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
     const file = checkmatedKingSquare[0];
     const rank = parseInt(checkmatedKingSquare[1]);
@@ -475,10 +525,9 @@ function App() {
     const fileIndex = files.indexOf(file);
     const rankIndex = 8 - rank;
     
-    // Si el tablero está volteado (jugando con negras)
     const isFlipped = playerColor === 'b';
     
-    const squareSize = 500 / 8; // 62.5px por casilla
+    const squareSize = 500 / 8;
     const left = isFlipped ? (7 - fileIndex) * squareSize : fileIndex * squareSize;
     const top = isFlipped ? rankIndex * squareSize : (7 - rankIndex) * squareSize;
     
@@ -529,6 +578,7 @@ function App() {
             Jugando con: {playerColor === 'w' ? '⚪ Blancas' : '⚫ Negras'} | 
             Dificultad: {difficulty === 'easy' ? '🌱 Principiante' : difficulty === 'medium' ? '⚔️ Intermedio' : '👑 Avanzado'}
             {trainingMode && ' | 🎓 Modo Entrenamiento'}
+            {aiThinking && ' | 🤔 Lichess pensando...'}
           </p>
         </div>
         <AuthButton />
@@ -537,15 +587,18 @@ function App() {
       <div className="game-container">
         <div className="board-section">
           <div className="controls">
-            <button onClick={resetGame}>🔄 Nueva Partida</button>
+            <button onClick={resetGame} disabled={aiThinking}>
+              🔄 Nueva Partida
+            </button>
             <button 
               onClick={toggleTrainingMode}
               className={trainingMode ? 'training-active' : ''}
+              disabled={aiThinking}
             >
               {trainingMode ? '🎓 Entrenamiento ON' : '🎓 Entrenamiento OFF'}
             </button>
-            <button onClick={analyzeGame} disabled={loading}>
-              {loading ? 'Analizando...' : '🤖 Analizar con IA'}
+            <button onClick={analyzeGame} disabled={loading || aiThinking}>
+              {loading ? 'Analizando...' : '🧠 Analizar con Lichess'}
             </button>
           </div>
 
@@ -583,18 +636,38 @@ function App() {
               boardWidth={500}
               customBoardStyle={{
                 borderRadius: '10px',
-                boxShadow: '0 10px 40px rgba(0,0,0,0.3)'
+                boxShadow: '0 10px 40px rgba(0,0,0,0.3)',
+                opacity: aiThinking ? 0.7 : 1,
+                pointerEvents: aiThinking ? 'none' : 'auto'
               }}
               customLightSquareStyle={{ backgroundColor: themes[boardTheme].light }}
               customDarkSquareStyle={{ backgroundColor: themes[boardTheme].dark }}
               customSquareStyles={getSquareStyles()}
             />
             {renderSkullOverlay()}
+            {aiThinking && (
+              <div style={{
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                background: 'rgba(0,0,0,0.8)',
+                color: 'white',
+                padding: '20px 40px',
+                borderRadius: '10px',
+                fontSize: '20px',
+                fontWeight: 'bold',
+                zIndex: 1001
+              }}>
+                🧠 Lichess pensando...
+              </div>
+            )}
           </div>
 
           <div className="game-info">
             <p><strong>Turno:</strong> {game.turn() === playerColor ? 'Tu turno' : 'Turno de IA'}</p>
             <p><strong>Movimientos:</strong> {gameHistory.length}</p>
+            <p><strong>Motor:</strong> 🧠 Lichess API</p>
             {threats.length > 0 && trainingMode && (
               <p className="alert">⚠️ {threats.length} amenaza{threats.length > 1 ? 's' : ''} detectada{threats.length > 1 ? 's' : ''}</p>
             )}
@@ -608,12 +681,12 @@ function App() {
         </div>
 
         <div className="analysis-section">
-          <h2>📊 Análisis IA</h2>
+          <h2>📊 Análisis Lichess</h2>
           <div className="analysis-box">
             {analysis ? <pre>{analysis}</pre> : (
               <p className="placeholder">
-                Juega una partida y presiona "Analizar con IA" 
-                para recibir consejos personalizados.
+                Juega una partida y presiona "Analizar con Lichess" 
+                para recibir análisis profesional.
               </p>
             )}
           </div>
@@ -632,7 +705,7 @@ function App() {
       </div>
 
       <footer>
-        <p>🚀 Versión Beta - Análisis IA gratis ilimitado</p>
+        <p>🚀 Potenciado por Lichess API</p>
       </footer>
     </div>
   );

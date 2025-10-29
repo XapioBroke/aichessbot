@@ -184,6 +184,24 @@
   animation: victoryPulse 0.5s ease-in-out infinite;
 }
 
+.ai-thinking {
+  color: #667eea;
+  font-weight: bold;
+  animation: pulse 1.5s infinite;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.thinking-icon {
+  animation: rotate 2s linear infinite;
+}
+
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.5; }

@@ -1,18 +1,4 @@
-<button 
-                className={`diff-btn ${selectedDifficulty === 'medium' ? 'active' : ''}`}
-                onClick={() => setSelectedDifficulty('medium')}
-              >
-                <span className="diff-icon">⚔️</span>
-                <span className="diff-name">Intermedio</span>
-                <span className="diff-desc">Stockfish ELO ~1500 | Táctica sólida</span>
-              </button>
-              <button 
-                className={`diff-btn ${selectedDifficulty === 'hard' ? 'active' : ''}`}
-                onClick={() => setSelectedDifficulty('hard')}
-              >
-                <span className="diff-icon">👑</span>
-                <span className="diff-name">Avanzado</span>
-                <span className="diff-desc">Stockfish ELO ~2200 | Experto implacableimport React, { useState } from 'react';
+import React, { useState } from 'react';
 import AuthButton from './AuthButton';
 import './WelcomeScreen.css';
 
@@ -30,14 +16,13 @@ function WelcomeScreen({ onStart, onSelectTheme }) {
   ];
 
   const handleStart = () => {
-    // Convertir el formato correcto para App.js
     let finalColor = selectedColor;
     if (selectedColor === 'white') {
       finalColor = 'w';
     } else if (selectedColor === 'black') {
       finalColor = 'b';
     } else if (selectedColor === 'random') {
-      finalColor = 'random'; // App.js manejará la aleatoriedad
+      finalColor = 'random';
     }
     
     onSelectTheme(selectedTheme);
@@ -46,7 +31,6 @@ function WelcomeScreen({ onStart, onSelectTheme }) {
 
   return (
     <div className="welcome-screen">
-      {/* Botón de autenticación en esquina superior derecha */}
       <div className="auth-button-container">
         <AuthButton />
       </div>
@@ -70,7 +54,21 @@ function WelcomeScreen({ onStart, onSelectTheme }) {
                 <span className="diff-name">Principiante</span>
                 <span className="diff-desc">Movimientos aleatorios + Entrenamiento</span>
               </button>
-</span>
+              <button 
+                className={`diff-btn ${selectedDifficulty === 'medium' ? 'active' : ''}`}
+                onClick={() => setSelectedDifficulty('medium')}
+              >
+                <span className="diff-icon">⚔️</span>
+                <span className="diff-name">Intermedio</span>
+                <span className="diff-desc">Stockfish ELO ~1500 | Táctica sólida</span>
+              </button>
+              <button 
+                className={`diff-btn ${selectedDifficulty === 'hard' ? 'active' : ''}`}
+                onClick={() => setSelectedDifficulty('hard')}
+              >
+                <span className="diff-icon">👑</span>
+                <span className="diff-name">Avanzado</span>
+                <span className="diff-desc">Stockfish ELO ~2200 | Experto implacable</span>
               </button>
             </div>
           </div>
