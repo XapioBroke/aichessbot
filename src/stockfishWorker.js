@@ -129,11 +129,11 @@ class TacticalEngine {
     
     if (moves.length === 0) return null;
     
-    // Configuración por dificultad
+    // Configuración OPTIMIZADA (sin bloquear navegador)
     const config = {
-      easy: { depth: 1, random: 0.8 },     // 80% aleatorio
-      medium: { depth: 3, random: 0.3 },    // 30% aleatorio
-      hard: { depth: 5, random: 0 }         // 0% aleatorio (siempre mejor)
+      easy: { depth: 1, random: 0.85, maxMoves: 20 },      // 85% aleatorio
+      medium: { depth: 2, random: 0.2, maxMoves: 30 },     // Depth 2 (rápido)
+      hard: { depth: 3, random: 0, maxMoves: 40 }          // Depth 3 (fuerte pero rápido)
     };
     
     const settings = config[difficulty] || config.medium;
@@ -144,21 +144,16 @@ class TacticalEngine {
       return `${randomMove.from}${randomMove.to}${randomMove.promotion || ''}`;
     }
     
-    // Evaluar todos los movimientos
+    // Limitar movimientos a evaluar (optimización)
+    const movesToEvaluate = this.orderMoves(moves, game).slice(0, settings.maxMoves);
+    
+    // Evaluar movimientos
     let bestMove = null;
     let bestValue = game.turn() === 'w' ? -Infinity : Infinity;
     
-    // Ordenar movimientos (capturas primero para mejor poda)
-    moves.sort((a, b) => {
-      const aScore = a.captured ? 100 : 0;
-      const bScore = b.captured ? 100 : 0;
-      return bScore - aScore;
-    });
-    
-    for (const move of moves) {
+    for (const move of movesToEvaluate) {
       game.move(move);
       
-      // Minimax con poda Alpha-Beta
       const value = this.minimax(
         game, 
         settings.depth - 1, 
@@ -183,6 +178,33 @@ class TacticalEngine {
     }
     
     return `${bestMove.from}${bestMove.to}${bestMove.promotion || ''}`;
+  }
+  
+  // Ordenar movimientos (capturas y jaques primero)
+  orderMoves(moves, game) {
+    return moves.sort((a, b) => {
+      let scoreA = 0;
+      let scoreB = 0;
+      
+      // Prioridad 1: Capturas
+      if (a.captured) scoreA += 100;
+      if (b.captured) scoreB += 100;
+      
+      // Prioridad 2: Jaques
+      game.move(a);
+      if (game.isCheck()) scoreA += 50;
+      game.undo();
+      
+      game.move(b);
+      if (game.isCheck()) scoreB += 50;
+      game.undo();
+      
+      // Prioridad 3: Desarrollo central
+      if (['e4','e5','d4','d5'].includes(a.to)) scoreA += 20;
+      if (['e4','e5','d4','d5'].includes(b.to)) scoreB += 20;
+      
+      return scoreB - scoreA;
+    });
   }
 
   terminate() {
